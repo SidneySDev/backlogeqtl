@@ -19,18 +19,11 @@ jobs:
       - name: Install Firebase CLI
         run: npm install -g firebase-tools@12.9.0
 
-      - name: Verify project structure
+      - name: Prepare files
         run: |
-          echo "Estrutura do repositório:"
-          ls -la
-          
-          echo "Conteúdo da pasta public:"
-          ls -la public/
-          
-          if [ ! -f "public/index.html" ]; then
-            echo "::error::index.html não encontrado em public/"
-            exit 1
-          fi
+          mkdir -p public
+          cp -r ./* public/ || true
+          rm -rf public/.github
 
       - name: Replace environment secrets
         env:
@@ -44,25 +37,30 @@ jobs:
           JSONBIN_MASTER_KEY: ${{ secrets.JSONBIN_MASTER_KEY }}
           JSONBIN_ACCESS_KEY: ${{ secrets.JSONBIN_ACCESS_KEY }}
         run: |
-          sed -i "s|%%FIREBASE_API_KEY%%|$FIREBASE_API_KEY|g" public/index.html
-          sed -i "s|%%FIREBASE_AUTH_DOMAIN%%|$FIREBASE_AUTH_DOMAIN|g" public/index.html
-          sed -i "s|%%FIREBASE_PROJECT_ID%%|$FIREBASE_PROJECT_ID|g" public/index.html
-          sed -i "s|%%FIREBASE_STORAGE_BUCKET%%|$FIREBASE_STORAGE_BUCKET|g" public/index.html
-          sed -i "s|%%FIREBASE_MESSAGING_SENDER_ID%%|$FIREBASE_MESSAGING_SENDER_ID|g" public/index.html
-          sed -i "s|%%FIREBASE_APP_ID%%|$FIREBASE_APP_ID|g" public/index.html
-          sed -i "s|%%JSONBIN_BIN_ID%%|$JSONBIN_BIN_ID|g" public/index.html
-          sed -i "s|%%JSONBIN_MASTER_KEY%%|$JSONBIN_MASTER_KEY|g" public/index.html
-          sed -i "s|%%JSONBIN_ACCESS_KEY%%|$JSONBIN_ACCESS_KEY|g" public/index.html
+          # Substitui em todos os arquivos HTML, JS e CSS
+          find public/ -type f \( -name "*.html" -o -name "*.js" -o -name "*.css" \) -exec sed -i \
+            -e "s|%%FIREBASE_API_KEY%%|$FIREBASE_API_KEY|g" \
+            -e "s|%%FIREBASE_AUTH_DOMAIN%%|$FIREBASE_AUTH_DOMAIN|g" \
+            -e "s|%%FIREBASE_PROJECT_ID%%|$FIREBASE_PROJECT_ID|g" \
+            -e "s|%%FIREBASE_STORAGE_BUCKET%%|$FIREBASE_STORAGE_BUCKET|g" \
+            -e "s|%%FIREBASE_MESSAGING_SENDER_ID%%|$FIREBASE_MESSAGING_SENDER_ID|g" \
+            -e "s|%%FIREBASE_APP_ID%%|$FIREBASE_APP_ID|g" \
+            -e "s|%%JSONBIN_BIN_ID%%|$JSONBIN_BIN_ID|g" \
+            -e "s|%%JSONBIN_MASTER_KEY%%|$JSONBIN_MASTER_KEY|g" \
+            -e "s|%%JSONBIN_ACCESS_KEY%%|$JSONBIN_ACCESS_KEY|g" \
+            {} \;
 
-      - name: Debug substitutions
+          echo "Verificando substituições..."
+          grep -r "%%" public/ && exit 1 || echo "Todas variáveis substituídas"
+
+      - name: Debug config
         run: |
-          echo "Verificando substituições:"
-          grep -E '%%[A-Z_]+%%' public/index.html || echo "Todas as variáveis foram substituídas"
+          echo "Configuração final:"
+          grep -A 10 "window.appConfig" public/index.html || echo "Config não encontrada"
 
       - name: Deploy to Firebase
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
           FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
         run: |
-          echo "Iniciando deploy..."
           firebase deploy --only hosting --token "$FIREBASE_TOKEN" --project "$FIREBASE_PROJECT_ID" --debug
