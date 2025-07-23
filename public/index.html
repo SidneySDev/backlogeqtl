@@ -8,11 +8,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
-    <!-- Firebase SDK<script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script> -->
     <style>
         /* Splash Screen Styles */
         #splash-screen {
@@ -1265,7 +1263,6 @@
             vertical-align: middle;
         }
     </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
 </head>
 
 <body>
@@ -1521,11 +1518,12 @@
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/pt-br.js"></script>
     <script>
         // Mostrar splash screen e depois carregar a página após 1.5 segundos
-        document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(function() {
+        document.addEventListener('DOMContentLoaded', function () {
+            setTimeout(function () {
                 const splash = document.getElementById('splash-screen');
                 splash.style.opacity = '0';
-                setTimeout(function() {
+
+                setTimeout(function () {
                     splash.style.display = 'none';
                     document.getElementById('app-container').style.display = 'flex';
                     initApplication();
@@ -1546,13 +1544,12 @@
 
             // Inicializar Firebase
             const app = firebase.initializeApp(firebaseConfig);
-            const database = getDatabase(app); // Para Realtime Database
-            const firestore = getFirestore(app); // Para Firestore 
+            const db = firebase.firestore();
 
             // Configurações do JSONBin (apenas para leitura)
-            const BIN_ID = '%%JSONBIN_BIN_ID%%';
-            const MASTER_KEY = '%%JSONBIN_MASTER_KEY%%';
-            const ACCESS_KEY = '%%JSONBIN_ACCESS_KEY%%';
+            const BIN_ID = "%%JSONBIN_BIN_ID%%";
+            const MASTER_KEY = "%%JSONBIN_MASTER_KEY%%";
+            const ACCESS_KEY = "%%JSONBIN_ACCESS_KEY%%";
             const API_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
             // Elementos DOM
