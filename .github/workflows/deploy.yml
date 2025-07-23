@@ -10,26 +10,24 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Importante para projetos Firebase
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          check-latest: true
+          cache: 'npm'
 
-      - name: Install Firebase CLI
+      - name: Install Firebase CLI (evitando NPX)
         run: |
-          echo "Instalando Firebase CLI..."
-          npm install --global --no-package-lock firebase-tools@12.9.0
+          # Instala diretamente sem usar npx
+          npm install -g firebase-tools@12.9.0
           echo "Versão do Firebase: $(firebase --version)"
 
-      - name: Prepare deployment structure
+      - name: Prepare files
         run: |
           mkdir -p public
           if [ -f "index.html" ]; then
-            cp -v index.html public/
+            cp index.html public/
           elif [ -f "public/index.html" ]; then
             echo "index.html já está no diretório public/"
           else
@@ -37,51 +35,10 @@ jobs:
             exit 1
           fi
 
-      - name: Inject environment secrets
-        env:
-          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
-          FIREBASE_AUTH_DOMAIN: ${{ secrets.FIREBASE_AUTH_DOMAIN }}
-          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
-          FIREBASE_STORAGE_BUCKET: ${{ secrets.FIREBASE_STORAGE_BUCKET }}
-          FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}
-          FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
-          JSONBIN_BIN_ID: ${{ secrets.JSONBIN_BIN_ID }}
-          JSONBIN_MASTER_KEY: ${{ secrets.JSONBIN_MASTER_KEY }}
-          JSONBIN_ACCESS_KEY: ${{ secrets.JSONBIN_ACCESS_KEY }}
-        run: |
-          echo "Substituindo variáveis..."
-          for placeholder in $(grep -oP '%%\K[A-Z_]+(?=%%)' public/index.html | sort -u); do
-            var_name="${placeholder}"
-            var_value="${!var_name}"
-            
-            if [ -z "$var_value" ]; then
-              echo "::warning::Variável $placeholder não definida!"
-              continue
-            fi
-            
-            echo "Substituindo: ${placeholder} => [oculto]"
-            sed -i "s|%%${placeholder}%%|${var_value}|g" public/index.html
-          done
-
-          echo "Verificando substituições..."
-          if grep -q '%%' public/index.html; then
-            echo "::error::Placeholders não substituídos encontrados!"
-            grep -n '%%' public/index.html
-            exit 1
-          fi
-
-      - name: Validate deployment
-        run: |
-          echo "Estrutura final:"
-          ls -la public/
-          echo -e "\nConteúdo inicial do index.html:"
-          head -n 10 public/index.html
-
-      - name: Deploy to Firebase Hosting
+      - name: Deploy to Firebase
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}'
           projectId: ${{ secrets.FIREBASE_PROJECT_ID }}
           channelId: live
-          target: 'https://backlognoc.web.app' 
